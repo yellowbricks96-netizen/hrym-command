@@ -1,271 +1,190 @@
-cat << 'HTMLEOF'
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#07090f">
 <title>HRYM Command</title>
-<link rel="manifest" href="/manifest.json">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=Syne:wght@700;800&display=swap');
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'IBM Plex Mono',monospace;background:#07090f;color:#c8cdd8;height:100dvh;display:flex;flex-direction:column;overflow:hidden}
-  ::-webkit-scrollbar{width:3px}
-  ::-webkit-scrollbar-thumb{background:#1e2230;border-radius:2px}
-  #topbar{height:48px;background:#07090f;border-bottom:1px solid #111520;display:flex;align-items:center;padding:0 14px;gap:10px;flex-shrink:0}
-  #brand{font-family:'Syne',sans-serif;font-size:13px;font-weight:800;color:#0066FF;letter-spacing:3px}
-  #agent-label{font-size:10px;color:#3a4055;letter-spacing:2px;margin-left:4px}
-  #status-dot{width:6px;height:6px;border-radius:50%;margin-left:auto;flex-shrink:0}
-  #agent-code{font-size:10px;letter-spacing:1.5px;margin-left:6px}
-  #sidebar{position:fixed;top:0;left:0;width:240px;height:100%;background:#07090f;border-right:1px solid #111520;z-index:100;transform:translateX(-100%);transition:transform 0.25s ease;display:flex;flex-direction:column}
-  #sidebar.open{transform:translateX(0)}
-  #sidebar-header{height:48px;display:flex;align-items:center;padding:0 14px;border-bottom:1px solid #111520;gap:10px}
-  #sidebar-title{font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:#0066FF;letter-spacing:2px}
-  #close-sidebar{background:none;border:none;color:#444;cursor:pointer;font-size:18px;margin-left:auto;padding:4px}
-  #agent-list{flex:1;overflow-y:auto;padding:10px 8px}
-  .agent-label-group{font-size:9px;color:#2a3050;letter-spacing:2px;padding:8px 8px 6px}
-  .agent-btn{width:100%;background:none;border:none;border-left:2px solid transparent;padding:10px 10px 10px 12px;cursor:pointer;display:flex;align-items:center;gap:10px;border-radius:0 6px 6px 0;margin-bottom:2px;transition:all 0.15s;text-align:left;color:inherit}
-  .agent-btn:hover{background:#0d1020}
-  .agent-btn.active{background:#0d1020}
-  .agent-glyph{font-size:16px;flex-shrink:0}
-  .agent-info{flex:1;min-width:0}
-  .agent-name{font-size:11px;font-weight:600;letter-spacing:0.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .agent-code-small{font-size:9px;letter-spacing:0.5px;margin-top:1px}
-  .msg-count{font-size:9px;border-radius:10px;padding:1px 5px;flex-shrink:0}
-  #sidebar-footer{padding:12px 16px;border-top:1px solid #111520;font-size:9px;color:#1e2230;letter-spacing:1px}
-  #overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:99;display:none}
-  #overlay.show{display:block}
-  #agent-header{padding:12px 16px;border-bottom:1px solid #111520;display:flex;align-items:center;gap:12px;flex-shrink:0}
-  #agent-icon{width:34px;height:34px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
-  #agent-name-display{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:#e8eaf0;letter-spacing:0.5px}
-  #agent-subtitle{font-size:9px;letter-spacing:1px;margin-top:1px}
-  #clear-btn{margin-left:auto;background:none;border:1px solid #1e2230;color:#3a4055;cursor:pointer;font-size:9px;letter-spacing:1px;padding:4px 10px;border-radius:4px;font-family:inherit}
-  #messages{flex:1;overflow-y:auto;padding:16px 14px 8px}
-  #empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:10px;opacity:0.5}
-  #empty-glyph{font-size:28px}
-  #empty-text{font-size:11px;color:#3a4055;letter-spacing:1.5px;text-align:center}
-  .msg-row{display:flex;align-items:flex-start;gap:8px;margin-bottom:14px;animation:fadeUp 0.3s ease}
-  .msg-row.user{flex-direction:row-reverse}
-  .msg-avatar{width:26px;height:26px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;margin-top:2px}
-  .msg-bubble{max-width:80%;padding:9px 13px;font-size:13px;line-height:1.65;letter-spacing:0.1px;white-space:pre-wrap}
-  .msg-bubble.user{background:#0066FF;color:#fff;border-radius:12px 12px 2px 12px}
-  .msg-bubble.assistant{background:#0f1117;border:1px solid #1e2230;color:#c8cdd8;border-radius:2px 12px 12px 12px}
-  #typing{display:none;align-items:center;gap:4px;padding:8px 14px}
-  #typing.show{display:flex}
-  .dot{width:5px;height:5px;border-radius:50%;animation:pulse 1.2s ease-in-out infinite}
-  .dot:nth-child(2){animation-delay:0.2s}
-  .dot:nth-child(3){animation-delay:0.4s}
-  #input-area{padding:10px 12px 14px;border-top:1px solid #111520;display:flex;gap:8px;align-items:flex-end;flex-shrink:0}
-  #input-wrap{flex:1;background:#0d1020;border:1px solid #1e2230;border-radius:8px;padding:9px 12px;display:flex;align-items:flex-end}
-  #input{flex:1;background:none;border:none;outline:none;color:#c8cdd8;font-size:13px;font-family:inherit;line-height:1.5;max-height:100px;overflow-y:auto;resize:none}
-  #send-btn{width:38px;height:38px;border-radius:8px;border:none;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background 0.2s,opacity 0.2s;color:#fff}
-  #menu-btn{background:none;border:none;color:#444;cursor:pointer;font-size:16px;padding:4px 6px;border-radius:4px}
-  @keyframes fadeUp{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
-  @keyframes pulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@700;800&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'IBM Plex Mono',monospace;background:#07090f;color:#c8cdd8;height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-thumb{background:#1e2230;border-radius:2px}
+#topbar{height:48px;background:#07090f;border-bottom:1px solid #111520;display:flex;align-items:center;padding:0 14px;gap:10px;flex-shrink:0}
+#brand{font-family:'Syne',sans-serif;font-size:13px;font-weight:800;color:#0066FF;letter-spacing:3px}
+#agent-label{font-size:10px;color:#3a4055;letter-spacing:2px}
+#status-dot{width:6px;height:6px;border-radius:50%;margin-left:auto;flex-shrink:0}
+#agent-code{font-size:10px;letter-spacing:1.5px;margin-left:6px}
+#sidebar{position:fixed;top:0;left:0;width:240px;height:100%;background:#07090f;border-right:1px solid #111520;z-index:100;transform:translateX(-100%);transition:transform 0.25s ease;display:flex;flex-direction:column}
+#sidebar.open{transform:translateX(0)}
+#sidebar-header{height:48px;display:flex;align-items:center;padding:0 14px;border-bottom:1px solid #111520;gap:10px}
+#sidebar-title{font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:#0066FF;letter-spacing:2px}
+#close-btn{background:none;border:none;color:#444;cursor:pointer;font-size:18px;margin-left:auto;padding:4px}
+#agent-list{flex:1;overflow-y:auto;padding:10px 8px}
+.grp{font-size:9px;color:#2a3050;letter-spacing:2px;padding:8px 8px 6px}
+.abtn{width:100%;background:none;border:none;border-left:2px solid transparent;padding:10px 10px 10px 12px;cursor:pointer;display:flex;align-items:center;gap:10px;border-radius:0 6px 6px 0;margin-bottom:2px;transition:all 0.15s;text-align:left;color:inherit}
+.abtn:hover,.abtn.active{background:#0d1020}
+.agl{font-size:16px;flex-shrink:0}
+.ainf{flex:1;min-width:0}
+.anm{font-size:11px;font-weight:600;letter-spacing:0.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.acd{font-size:9px;letter-spacing:0.5px;margin-top:1px}
+.cnt{font-size:9px;border-radius:10px;padding:1px 5px;flex-shrink:0}
+#sf{padding:12px 16px;border-top:1px solid #111520;font-size:9px;color:#1e2230;letter-spacing:1px}
+#ov{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:99;display:none}
+#ov.show{display:block}
+#ah{padding:12px 16px;border-bottom:1px solid #111520;display:flex;align-items:center;gap:12px;flex-shrink:0}
+#ai{width:34px;height:34px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+#an{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:#e8eaf0;letter-spacing:0.5px}
+#as{font-size:9px;letter-spacing:1px;margin-top:1px}
+#cb{margin-left:auto;background:none;border:1px solid #1e2230;color:#3a4055;cursor:pointer;font-size:9px;letter-spacing:1px;padding:4px 10px;border-radius:4px;font-family:inherit}
+#msgs{flex:1;overflow-y:auto;padding:16px 14px 8px}
+#es{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:10px;opacity:0.5}
+#eg{font-size:28px}
+#et{font-size:11px;color:#3a4055;letter-spacing:1.5px;text-align:center}
+.mr{display:flex;align-items:flex-start;gap:8px;margin-bottom:14px;animation:fu 0.3s ease}
+.mr.user{flex-direction:row-reverse}
+.mav{width:26px;height:26px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;margin-top:2px}
+.mb{max-width:80%;padding:9px 13px;font-size:13px;line-height:1.65;white-space:pre-wrap;border-radius:12px 12px 2px 12px}
+.mb.user{background:#0066FF;color:#fff}
+.mb.assistant{background:#0f1117;border:1px solid #1e2230;color:#c8cdd8;border-radius:2px 12px 12px 12px}
+#ty{display:none;align-items:center;gap:4px;padding:8px 14px}
+#ty.show{display:flex}
+.dot{width:5px;height:5px;border-radius:50%;animation:pulse 1.2s ease-in-out infinite}
+.dot:nth-child(2){animation-delay:0.2s}
+.dot:nth-child(3){animation-delay:0.4s}
+#ia{padding:10px 12px 14px;border-top:1px solid #111520;display:flex;gap:8px;align-items:flex-end;flex-shrink:0}
+#iw{flex:1;background:#0d1020;border:1px solid #1e2230;border-radius:8px;padding:9px 12px}
+#inp{width:100%;background:none;border:none;outline:none;color:#c8cdd8;font-size:13px;font-family:inherit;line-height:1.5;max-height:100px;overflow-y:auto;resize:none}
+#sb{width:38px;height:38px;border-radius:8px;border:none;cursor:pointer;font-size:15px;color:#fff;flex-shrink:0;transition:background 0.2s}
+#mb2{background:none;border:none;color:#444;cursor:pointer;font-size:16px;padding:4px 6px;border-radius:4px}
+@keyframes fu{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:0.3;transform:scale(0.8)}50%{opacity:1;transform:scale(1.2)}}
 </style>
 </head>
 <body>
-
-<div id="overlay" onclick="closeSidebar()"></div>
-
+<div id="ov" onclick="closeSB()"></div>
 <div id="sidebar">
   <div id="sidebar-header">
     <div id="sidebar-title">HRYM</div>
-    <button id="close-sidebar" onclick="closeSidebar()">✕</button>
+    <button id="close-btn" onclick="closeSB()">x</button>
   </div>
   <div id="agent-list"></div>
-  <div id="sidebar-footer">HRYM HOLDINGS INC.</div>
+  <div id="sf">HRYM HOLDINGS INC.</div>
 </div>
-
 <div id="topbar">
-  <button id="menu-btn" onclick="openSidebar()">☰</button>
+  <button id="mb2" onclick="openSB()">= = =</button>
   <div id="brand">HRYM</div>
   <div id="agent-label">COMMAND</div>
   <div id="status-dot"></div>
   <div id="agent-code"></div>
 </div>
-
-<div id="agent-header">
-  <div id="agent-icon"></div>
-  <div>
-    <div id="agent-name-display"></div>
-    <div id="agent-subtitle"></div>
-  </div>
-  <button id="clear-btn" onclick="clearChat()">CLEAR</button>
+<div id="ah">
+  <div id="ai"></div>
+  <div><div id="an"></div><div id="as"></div></div>
+  <button id="cb" onclick="clearChat()">CLEAR</button>
 </div>
-
-<div id="messages">
-  <div id="empty-state">
-    <div id="empty-glyph"></div>
-    <div id="empty-text"></div>
-  </div>
-  <div id="typing">
-    <div class="dot"></div>
-    <div class="dot"></div>
-    <div class="dot"></div>
-  </div>
+<div id="msgs">
+  <div id="es"><div id="eg"></div><div id="et"></div></div>
+  <div id="ty"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
 </div>
-
-<div id="input-area">
-  <div id="input-wrap">
-    <textarea id="input" rows="1" placeholder="Message agent..."></textarea>
-  </div>
-  <button id="send-btn" onclick="sendMessage()">↑</button>
+<div id="ia">
+  <div id="iw"><textarea id="inp" rows="1" placeholder="Message agent..."></textarea></div>
+  <button id="sb" onclick="send()">^</button>
 </div>
-
 <script>
-const AGENTS = [
-  {id:'cos',code:'COS',name:'Chief of Staff',subtitle:'Command & Coordination',color:'#0066FF',glyph:'⬡',welcome:'Command center active. What needs to move today?',persona:`You are the Chief of Staff Agent for HRYM Holdings Inc., serving Lalataksh — a 36-year-old founder running Carbon Index (carbon market infrastructure, $10B+ 10-year vision) and an Education Consultancy (live, generating daily revenue), both under HRYM Holdings Inc., based in Calgary, Canada. You are the central coordinator of a 7-department AI executive team. Your role: prioritize tasks, route requests to the right department, track execution, consolidate reports, and act as the operating core of his AI family office. You speak with authority, brevity, and precision. You are proactive, not reactive. Income targets: $1M (2026), $2M (2030), $3M (2034). Relocation trigger: $3M personal liquidity → Abu Dhabi (primary) or Marbella (secondary).`},
-  {id:'finance',code:'FIN',name:'Finance & Legal',subtitle:'Capital Protection Engine',color:'#00C896',glyph:'◈',welcome:'Finance & Legal online. Show me the numbers or the contract.',persona:`You are the Finance, Legal & Compliance Agent for HRYM Holdings Inc., serving Lalataksh — founder running Carbon Index and Education Consultancy in Calgary. Long-term: $3M personal liquidity triggers relocation to Abu Dhabi. Your role: bookkeeping, global tax strategy (Canada departure tax, UAE Free Zone via ADGM/DIFC), audit readiness, contracts, licensing, grants, cashflow analysis, capital protection. You think like a capital allocator — Thorndike, Buffett, Singleton frameworks. You speak in precision: numbers, percentages, timelines, risk ratings. No fluff.`},
-  {id:'strategy',code:'INT',name:'Strategy & Intelligence',subtitle:'External Awareness System',color:'#FF6B35',glyph:'◎',welcome:'Intel channel open. What are we tracking?',persona:`You are the Strategy, Intelligence & Research Agent for HRYM Holdings Inc., serving Lalataksh — founder of Carbon Index (carbon market infrastructure) and Education Consultancy, Calgary. Decade sequence: Carbon Index ($10B+ valuation) → Robotic Shovel™ → green energy. Your role: monitor world events, commodity markets, AI developments, carbon policy shifts, competitor activity, geopolitical risk, strategic opportunities, trend forecasting. You keep him ahead of changes. You think like a geopolitical analyst crossed with a macro hedge fund strategist. Your outputs are intelligence briefings, not Wikipedia summaries.`},
-  {id:'education',code:'EDU',name:'Education & Cognition',subtitle:'Personalized Learning Engine',color:'#A855F7',glyph:'◇',welcome:'Ready to build. What are we learning today?',persona:`You are the Education & Cognitive Expansion Agent for HRYM Holdings Inc., serving Lalataksh — a founder who thinks in decade-long sequences and has built a 908-page CarbonCore Master Course, a 90-day satellite MRV sprint, and a 24-week branding curriculum. Your role: teach complex topics progressively, adapt to his learning style (systems thinking, first principles, capital allocator frameworks), compress years of learning, build strategic thinking. Topics: finance, AI, law, negotiation, carbon markets, geopolitics, engineering, leadership. You teach like a world-class professor who respects intelligence.`},
-  {id:'ops',code:'OPS',name:'Operations & Execution',subtitle:'The Execution Machine',color:'#F59E0B',glyph:'▣',welcome:'Operations online. What are we executing?',persona:`You are the Operations & Execution Agent for HRYM Holdings Inc., serving Lalataksh — running Carbon Index (foundational phase) and Education Consultancy (live, daily revenue) in parallel in Calgary. Your role: track projects, hiring pipelines, vendor management, KPI monitoring, execution timelines, procurement, automation, SOP development. You think like a COO and systems engineer combined. You turn plans into measurable execution. When he brings a goal, you break it into a project plan with owners, deadlines, dependencies, and success metrics.`},
-  {id:'sales',code:'GRW',name:'Sales & Branding',subtitle:'Growth & Reputation Engine',color:'#EC4899',glyph:'◉',welcome:'Growth engine ready. What are we building or pitching?',persona:`You are the Sales, Branding & Influence Agent for HRYM Holdings Inc., serving Lalataksh — founder of Carbon Index (electric blue brand, "The Standard for Carbon Markets" tagline, carbonindex.ca, LinkedIn from zero) and Education Consultancy generating daily revenue. Your role: lead generation, enterprise outreach, campaigns, media positioning, reputation monitoring, negotiation support, partnerships, investor relations. You understand brand identity, narrative strategy, and relationship-gated markets. You generate hooks, outreach copy, positioning frameworks, and influence strategies.`},
-  {id:'health',code:'BIO',name:'Health & Longevity',subtitle:'Biological Optimization System',color:'#10B981',glyph:'◐',welcome:'Bio systems check. What are we optimizing?',persona:`You are the Health, Longevity & Performance Agent for HRYM Holdings Inc., serving Lalataksh — 36 years old, explicit goal of looking and feeling significantly younger than chronological age, maintaining high performance for decades, active and vital through age 100. He and spouse Sadhana follow a wellness protocol. Your role: biomarker guidance, gout prevention, cholesterol management, testosterone optimization, sleep optimization, exercise scheduling, diet planning, stress monitoring, longevity protocols. You think like a longevity physician crossed with a performance coach. Always specific, never generic.`},
-  {id:'mental',code:'PSY',name:'Mental & Decision Quality',subtitle:'Psychological Stabilizer',color:'#6366F1',glyph:'◑',welcome:"Clarity channel open. What's weighing on you?",persona:`You are the Mental Stability & Decision Quality Agent for HRYM Holdings Inc., serving Lalataksh — 36-year-old founder running two businesses in parallel from Calgary, targeting $1M income 2026, $3M liquidity as relocation trigger to Abu Dhabi, 2026-2090 life plan. Your role: reduce burnout risk, stabilize emotions, improve decision clarity, identify irrational decisions, prevent overload, encourage discipline, provide perspective, challenge unrealistic assumptions. You are not a cheerleader. You are a trusted advisor who tells hard truths with empathy. You use behavioral frameworks and cognitive bias identification.`}
+var AGENTS=[
+{id:'cos',code:'COS',name:'Chief of Staff',sub:'Command & Coordination',color:'#0066FF',gl:'O',welcome:'Command center active. What needs to move today?',p:'You are the Chief of Staff Agent for HRYM Holdings Inc., serving Lalataksh, a 36-year-old founder running Carbon Index and an Education Consultancy in Calgary. Coordinate 7 executive departments. Prioritize tasks, route requests, track execution. Speak with authority and brevity. Income targets: $1M 2026, $2M 2030, $3M 2034. Relocation trigger: $3M liquidity to Abu Dhabi.'},
+{id:'fin',code:'FIN',name:'Finance & Legal',sub:'Capital Protection Engine',color:'#00C896',gl:'$',welcome:'Finance & Legal online. Show me the numbers.',p:'You are the Finance and Legal Agent for HRYM Holdings Inc., serving Lalataksh. Handle bookkeeping, tax strategy including Canada departure tax and UAE Free Zone ADGM/DIFC, contracts, cashflow, capital protection. Think like Buffett and Thorndike. Speak in numbers, percentages, and risk ratings only.'},
+{id:'int',code:'INT',name:'Strategy & Intelligence',sub:'External Awareness System',color:'#FF6B35',gl:'*',welcome:'Intel channel open. What are we tracking?',p:'You are the Strategy and Intelligence Agent for HRYM Holdings Inc., serving Lalataksh, founder of Carbon Index. Monitor carbon policy, commodity markets, AI developments, geopolitical risk, competitor activity. Deliver intelligence briefings not summaries. Keep him ahead of changes.'},
+{id:'edu',code:'EDU',name:'Education & Cognition',sub:'Personalized Learning Engine',color:'#A855F7',gl:'+',welcome:'Ready to build. What are we learning today?',p:'You are the Education Agent for HRYM Holdings Inc., serving Lalataksh who thinks in systems and first principles. Teach finance, AI, law, carbon markets, geopolitics, leadership progressively. Compress years of learning. Teach like a world-class professor.'},
+{id:'ops',code:'OPS',name:'Operations & Execution',sub:'The Execution Machine',color:'#F59E0B',gl:'#',welcome:'Operations online. What are we executing?',p:'You are the Operations Agent for HRYM Holdings Inc., serving Lalataksh running Carbon Index and Education Consultancy in parallel. Track projects, KPIs, timelines, vendors, SOPs. Think like a COO. Turn goals into plans with owners, deadlines, and success metrics.'},
+{id:'grw',code:'GRW',name:'Sales & Branding',sub:'Growth & Reputation Engine',color:'#EC4899',gl:'@',welcome:'Growth engine ready. What are we building or pitching?',p:'You are the Sales and Branding Agent for HRYM Holdings Inc., serving Lalataksh, founder of Carbon Index with the tagline The Standard for Carbon Markets. Handle lead generation, outreach, positioning, investor relations, partnerships. Generate hooks, copy, and influence strategies.'},
+{id:'bio',code:'BIO',name:'Health & Longevity',sub:'Biological Optimization System',color:'#10B981',gl:'~',welcome:'Bio systems check. What are we optimizing?',p:'You are the Health and Longevity Agent for HRYM Holdings Inc., serving Lalataksh, 36, targeting vitality through age 100. Handle biomarkers, gout prevention, cholesterol, testosterone, sleep, exercise, diet, stress. Think like a longevity physician. Always specific never generic.'},
+{id:'psy',code:'PSY',name:'Mental & Decision Quality',sub:'Psychological Stabilizer',color:'#6366F1',gl:'%',welcome:"Clarity channel open. What's weighing on you?",p:'You are the Mental Stability Agent for HRYM Holdings Inc., serving Lalataksh, 36-year-old founder running two businesses targeting $3M liquidity and Abu Dhabi relocation. Reduce burnout, improve decision clarity, identify irrational thinking, challenge assumptions. Tell hard truths with empathy. Not a cheerleader.'}
 ];
-
-let activeId = 'cos';
-let conversations = {};
-let loading = false;
-
-function getAgent(id){ return AGENTS.find(a=>a.id===id); }
-
-function renderSidebar(){
-  const list = document.getElementById('agent-list');
-  list.innerHTML = '<div class="agent-label-group">AGENTS</div>' + AGENTS.map(a=>{
-    const isActive = a.id===activeId;
-    const count = (conversations[a.id]||[]).filter(m=>m.role==='user').length;
-    return `<button class="agent-btn${isActive?' active':''}" onclick="switchAgent('${a.id}')" style="border-left-color:${isActive?a.color:'transparent'}">
-      <div class="agent-glyph" style="color:${isActive?a.color:'#2a3050'}">${a.glyph}</div>
-      <div class="agent-info">
-        <div class="agent-name" style="color:${isActive?'#e8eaf0':'#4a5270'}">${a.name}</div>
-        <div class="agent-code-small" style="color:${isActive?a.color+'99':'#2a3050'}">${a.code}</div>
-      </div>
-      ${count>0?`<div class="msg-count" style="background:${a.color}22;color:${a.color}">${count}</div>`:''}
-    </button>`;
-  }).join('');
-}
-
-function renderHeader(){
-  const a = getAgent(activeId);
-  document.getElementById('status-dot').style.background = a.color;
-  document.getElementById('status-dot').style.boxShadow = `0 0 6px ${a.color}`;
-  document.getElementById('agent-code').style.color = a.color;
-  document.getElementById('agent-code').textContent = a.code;
-  document.getElementById('agent-icon').style.background = a.color+'15';
-  document.getElementById('agent-icon').style.border = `1px solid ${a.color}33`;
-  document.getElementById('agent-icon').style.color = a.color;
-  document.getElementById('agent-icon').textContent = a.glyph;
-  document.getElementById('agent-name-display').textContent = a.name;
-  document.getElementById('agent-subtitle').style.color = a.color+'aa';
-  document.getElementById('agent-subtitle').textContent = a.subtitle;
-  document.getElementById('typing').querySelectorAll('.dot').forEach(d=>d.style.background=a.color);
-  document.getElementById('input').placeholder = `Message ${a.name}...`;
-  document.getElementById('send-btn').style.background = a.color;
-  document.getElementById('empty-glyph').textContent = a.glyph;
-  document.getElementById('empty-glyph').style.color = a.color+'44';
-  document.getElementById('empty-text').textContent = a.welcome;
-}
-
-function renderMessages(){
-  const a = getAgent(activeId);
-  const msgs = conversations[activeId]||[];
-  const container = document.getElementById('messages');
-  const empty = document.getElementById('empty-state');
-  const typing = document.getElementById('typing');
-  empty.style.display = msgs.length===0&&!loading?'flex':'none';
-  const existing = container.querySelectorAll('.msg-row');
-  existing.forEach(e=>e.remove());
-  msgs.forEach(msg=>{
-    const row = document.createElement('div');
-    row.className = `msg-row ${msg.role}`;
-    if(msg.role==='assistant'){
-      row.innerHTML = `<div class="msg-avatar" style="background:${a.color}22;border:1px solid ${a.color}44;color:${a.color}">▸</div><div class="msg-bubble assistant">${msg.content}</div>`;
-    } else {
-      row.innerHTML = `<div class="msg-bubble user">${msg.content}</div>`;
-    }
-    container.insertBefore(row, typing);
+var active='cos',convos={},loading=false;
+function ga(id){return AGENTS.find(function(a){return a.id===id});}
+function renderSB(){
+  var el=document.getElementById('agent-list');
+  var html='<div class="grp">AGENTS</div>';
+  AGENTS.forEach(function(a){
+    var isA=a.id===active;
+    var cnt=(convos[a.id]||[]).filter(function(m){return m.role==='user';}).length;
+    html+='<button class="abtn'+(isA?' active':'')+'" onclick="sw(\''+a.id+'\')" style="border-left-color:'+(isA?a.color:'transparent')+'">';
+    html+='<div class="agl" style="color:'+(isA?a.color:'#2a3050')+'">'+a.gl+'</div>';
+    html+='<div class="ainf"><div class="anm" style="color:'+(isA?'#e8eaf0':'#4a5270')+'">'+a.name+'</div>';
+    html+='<div class="acd" style="color:'+(isA?a.color+'99':'#2a3050')+'">'+a.code+'</div></div>';
+    if(cnt>0)html+='<div class="cnt" style="background:'+a.color+'22;color:'+a.color+'">'+cnt+'</div>';
+    html+='</button>';
   });
-  typing.className = loading?'show':'';
-  container.scrollTop = container.scrollHeight;
+  el.innerHTML=html;
 }
-
-function switchAgent(id){
-  activeId = id;
-  renderSidebar();
-  renderHeader();
-  renderMessages();
-  closeSidebar();
-  document.getElementById('input').focus();
+function renderH(){
+  var a=ga(active);
+  document.getElementById('status-dot').style.cssText='background:'+a.color+';box-shadow:0 0 6px '+a.color;
+  document.getElementById('agent-code').style.color=a.color;
+  document.getElementById('agent-code').textContent=a.code;
+  document.getElementById('ai').style.cssText='background:'+a.color+'15;border:1px solid '+a.color+'33;color:'+a.color;
+  document.getElementById('ai').textContent=a.gl;
+  document.getElementById('an').textContent=a.name;
+  document.getElementById('as').style.color=a.color+'aa';
+  document.getElementById('as').textContent=a.sub;
+  document.getElementById('ty').querySelectorAll('.dot').forEach(function(d){d.style.background=a.color;});
+  document.getElementById('inp').placeholder='Message '+a.name+'...';
+  document.getElementById('sb').style.background=a.color;
+  document.getElementById('eg').textContent=a.gl;
+  document.getElementById('eg').style.color=a.color+'44';
+  document.getElementById('et').textContent=a.welcome;
 }
-
-function openSidebar(){
-  document.getElementById('sidebar').classList.add('open');
-  document.getElementById('overlay').classList.add('show');
+function renderM(){
+  var a=ga(active);
+  var msgs=convos[active]||[];
+  var c=document.getElementById('msgs');
+  document.getElementById('es').style.display=(msgs.length===0&&!loading)?'flex':'none';
+  c.querySelectorAll('.mr').forEach(function(e){e.remove();});
+  var ty=document.getElementById('ty');
+  msgs.forEach(function(msg){
+    var row=document.createElement('div');
+    row.className='mr '+msg.role;
+    if(msg.role==='assistant'){
+      row.innerHTML='<div class="mav" style="background:'+a.color+'22;border:1px solid '+a.color+'44;color:'+a.color+'">></div><div class="mb assistant">'+msg.content+'</div>';
+    }else{
+      row.innerHTML='<div class="mb user">'+msg.content+'</div>';
+    }
+    c.insertBefore(row,ty);
+  });
+  ty.className=loading?'show':'';
+  c.scrollTop=c.scrollHeight;
 }
-
-function closeSidebar(){
-  document.getElementById('sidebar').classList.remove('open');
-  document.getElementById('overlay').classList.remove('show');
-}
-
-function clearChat(){
-  conversations[activeId]=[];
-  renderMessages();
-  renderSidebar();
-}
-
-async function sendMessage(){
-  const input = document.getElementById('input');
-  const text = input.value.trim();
-  if(!text||loading) return;
-  const a = getAgent(activeId);
-  const history = conversations[activeId]||[];
-  const userMsg = {role:'user',content:text};
-  conversations[activeId] = [...history, userMsg];
-  input.value='';
-  input.style.height='auto';
-  loading=true;
-  renderMessages();
-  renderSidebar();
+function sw(id){active=id;renderSB();renderH();renderM();closeSB();document.getElementById('inp').focus();}
+function openSB(){document.getElementById('sidebar').classList.add('open');document.getElementById('ov').classList.add('show');}
+function closeSB(){document.getElementById('sidebar').classList.remove('open');document.getElementById('ov').classList.remove('show');}
+function clearChat(){convos[active]=[];renderM();renderSB();}
+async function send(){
+  var inp=document.getElementById('inp');
+  var txt=inp.value.trim();
+  if(!txt||loading)return;
+  var a=ga(active);
+  var hist=convos[active]||[];
+  convos[active]=[...hist,{role:'user',content:txt}];
+  inp.value='';inp.style.height='auto';
+  loading=true;renderM();renderSB();
   try{
-    const res = await fetch('/chat',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        messages: conversations[activeId].map(m=>({role:m.role,content:m.content})),
-        system: a.persona
-      })
-    });
-    const data = await res.json();
-    const reply = data.content?.[0]?.text||'No response received.';
-    conversations[activeId] = [...conversations[activeId],{role:'assistant',content:reply}];
+    var res=await fetch('/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:convos[active].map(function(m){return{role:m.role,content:m.content};}),system:a.p})});
+    var data=await res.json();
+    var reply=(data.content&&data.content[0]&&data.content[0].text)?data.content[0].text:'Error: '+JSON.stringify(data);
+    convos[active]=[...convos[active],{role:'assistant',content:reply}];
   }catch(e){
-    conversations[activeId] = [...conversations[activeId],{role:'assistant',content:'Connection error. Please try again.'}];
+    convos[active]=[...convos[active],{role:'assistant',content:'Error: '+e.message}];
   }
-  loading=false;
-  renderMessages();
-  renderSidebar();
+  loading=false;renderM();renderSB();
 }
-
-document.getElementById('input').addEventListener('keydown',e=>{
-  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}
-});
-document.getElementById('input').addEventListener('input',function(){
-  this.style.height='auto';
-  this.style.height=Math.min(this.scrollHeight,100)+'px';
-});
-
-renderSidebar();
-renderHeader();
-renderMessages();
+document.getElementById('inp').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}});
+document.getElementById('inp').addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px';});
+renderSB();renderH();renderM();
 </script>
 </body>
 </html>
-HTMLEOF
-echo "DONE"
 
