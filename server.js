@@ -9,7 +9,6 @@ app.use(express.static('public'));
 
 app.post('/chat', async (req, res) => {
   const { messages, system } = req.body;
-
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -25,11 +24,10 @@ app.post('/chat', async (req, res) => {
         messages: messages
       })
     });
-
     const data = await response.json();
     res.json(data);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to connect to Claude' });
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -39,5 +37,5 @@ app.get('*', (req, res) => {
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
-  console.log(`HRYM Command Center running on port ${PORT}`);
+  console.log(`HRYM running on port ${PORT}`);
 });
